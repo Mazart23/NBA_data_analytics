@@ -1,0 +1,2 @@
+basketball_reference_web_scraper==4.14.0
+seaborn
