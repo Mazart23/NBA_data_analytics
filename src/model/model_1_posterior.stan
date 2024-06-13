@@ -6,6 +6,7 @@ data {
   array[games_number] int<lower=0> home_score;
   array[games_number] int<lower=0> away_score;
 }
+
 parameters {
   real mu_home_att;
   real mu_away_att;
@@ -21,6 +22,7 @@ parameters {
   vector[teams_number-1] home_def_raw;
   vector[teams_number-1] away_def_raw;
 }
+
 transformed parameters {
   vector[games_number] log_mu_home;
   vector[games_number] log_mu_away;
@@ -45,6 +47,7 @@ transformed parameters {
   log_mu_home = home_att[home_team] + away_def[away_team];
   log_mu_away = away_att[away_team] + home_def[home_team];
 }
+
 model {
   mu_home_att ~ normal(0.2, 1);
   mu_away_att ~ normal(0, 1);
@@ -62,4 +65,14 @@ model {
 
   home_score ~ neg_binomial_2_log(log_mu_home, phi_home);
   away_score ~ neg_binomial_2_log(log_mu_away, phi_away);
+}
+
+generated quantities {
+  array[games_number] int home_score_pred;
+  array[games_number] int away_score_pred;
+
+  for (i in 1:games_number) {
+    home_score_pred[i] = neg_binomial_2_log_rng(log_mu_home[i], phi_home);
+    away_score_pred[i] = neg_binomial_2_log_rng(log_mu_away[i], phi_away);
+  }
 }
