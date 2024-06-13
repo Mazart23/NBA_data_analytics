@@ -67,12 +67,12 @@ model {
   away_score ~ neg_binomial_2_log(log_mu_away, phi_away);
 }
 
-generated quantities {
-  array[games_number] int home_score_pred;
-  array[games_number] int away_score_pred;
+// generated quantities {
+//   array[games_number] int home_score_pred;
+//   array[games_number] int away_score_pred;
 
-  for (i in 1:games_number) {
-    home_score_pred[i] = neg_binomial_2_log_rng(log_mu_home[i], phi_home);
-    away_score_pred[i] = neg_binomial_2_log_rng(log_mu_away[i], phi_away);
-  }
-}
+//   for (i in 1:games_number) {
+//     home_score_pred[i] = neg_binomial_2_log_rng(log_mu_home[i], phi_home);
+//     away_score_pred[i] = neg_binomial_2_log_rng(log_mu_away[i], phi_away);
+//   }
+// }
