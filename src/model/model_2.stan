@@ -13,6 +13,7 @@ parameters {
   real mu_away_def;
   real<lower=0> sigma2_att;
   real<lower=0> sigma2_def;
+  real<lower=0> off_set;
 
   vector[teams_number-1] home_att_raw;
   vector[teams_number-1] away_att_raw;
@@ -40,8 +41,8 @@ transformed parameters {
   away_def[teams_number] = -sum(away_def_raw);
 
   // getting mu in log form
-  log_mu_home = home_att[home_team] + away_def[away_team] + log(mu_home_att);
-  log_mu_away = away_att[away_team] + home_def[home_team] + log(mu_away_att);
+  log_mu_home = home_att[home_team] + away_def[away_team] + off_set;
+  log_mu_away = away_att[away_team] + home_def[home_team] + off_set;
 }
 model {
   mu_home_att ~ normal(3.5, 0.5);  // Adjusted for higher scores
@@ -50,6 +51,7 @@ model {
   mu_away_def ~ normal(3.5, 0.5);  // Adjusted for higher scores
   sigma2_att ~ gamma(2, 0.1);
   sigma2_def ~ gamma(2, 0.1);
+  off_set ~ normal(0.1, 0.1);
 
   home_att_raw ~ normal(mu_home_att, sigma2_att);
   away_att_raw ~ normal(mu_away_att, sigma2_att);
