@@ -16,6 +16,7 @@ parameters {
   real<lower=0> sigma2_def;
   real<lower=0> phi_home;
   real<lower=0> phi_away;
+  real<lower=0> c_offset;
 
   vector[teams_number-1] home_att_raw;
   vector[teams_number-1] away_att_raw;
@@ -44,35 +45,38 @@ transformed parameters {
   away_def[teams_number] = -sum(away_def_raw);
 
   // getting mu in log form
-  log_mu_home = home_att[home_team] + away_def[away_team];
-  log_mu_away = away_att[away_team] + home_def[home_team];
+  log_mu_home = home_att[home_team] + away_def[away_team] + c_offset;
+  log_mu_away = away_att[away_team] + home_def[home_team] + c_offset;
 }
 
 model {
-  mu_home_att ~ normal(0.2, 1);
-  mu_away_att ~ normal(0, 1);
-  mu_home_def ~ normal(-0.2, 1);
-  mu_away_def ~ normal(0, 1);
-  sigma2_att ~ gamma(10, 10);
-  sigma2_def ~ gamma(10, 10);
-  phi_home ~ normal(10, 10);
-  phi_away ~ normal(10, 10);
+  mu_home_att ~ normal(0, 0.0001);
+  mu_away_att ~ normal(0, 0.0001);
+  mu_home_def ~ normal(0, 0.0001);
+  mu_away_def ~ normal(0, 0.0001);
+  sigma2_att ~ gamma(0.1, 0.1);
+  sigma2_def ~ gamma(0.1, 0.1);
+  phi_home ~ uniform(0, 1);
+  phi_away ~ uniform(0, 1);
+  // phi_home ~ gamma(2.5, 0.05);
+  // phi_away ~ gamma(2.5, 0.05);
+  c_offset ~ normal(0, 0.0001);
 
-  home_att_raw ~ normal(mu_home_att, sigma2_att);
-  away_att_raw ~ normal(mu_away_att, sigma2_att);
-  home_def_raw ~ normal(mu_home_def, sigma2_def);
-  away_def_raw ~ normal(mu_away_def, sigma2_def);
+  home_att ~ normal(mu_home_att, sigma2_att);
+  away_att ~ normal(mu_away_att, sigma2_att);
+  home_def ~ normal(mu_home_def, sigma2_def);
+  away_def ~ normal(mu_away_def, sigma2_def);
 
   home_score ~ neg_binomial_2_log(log_mu_home, phi_home);
   away_score ~ neg_binomial_2_log(log_mu_away, phi_away);
 }
 
-// generated quantities {
-//   array[games_number] int home_score_pred;
-//   array[games_number] int away_score_pred;
+generated quantities {
+  array[games_number] int home_score_pred;
+  array[games_number] int away_score_pred;
 
-//   for (i in 1:games_number) {
-//     home_score_pred[i] = neg_binomial_2_log_rng(log_mu_home[i], phi_home);
-//     away_score_pred[i] = neg_binomial_2_log_rng(log_mu_away[i], phi_away);
-//   }
-// }
+  for (i in 1:games_number) {
+    home_score_pred[i] = neg_binomial_2_log_rng(log_mu_home[i], phi_home);
+    away_score_pred[i] = neg_binomial_2_log_rng(log_mu_away[i], phi_away);
+  }
+}
