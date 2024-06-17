@@ -1,41 +1,89 @@
 data {
-  int<lower=0> teams_number;
-  int<lower=0> games_number;
-  array[games_number] int home_team;
-  array[games_number] int away_team;
-  array[games_number] int<lower=0> home_score;
-  array[games_number] int<lower=0> away_score;
+    // Number of games
+    int<lower=1> N_games;
+
+    // Number of teams in the league
+    int<lower=1> N_teams;
+
+    // Home and away points scored in each game
+    array[N_games] int<lower=0> home_points;
+    array[N_games] int<lower=0> away_points;
+
+    // Team index for each game
+    array[N_games] int<lower=1, upper=N_teams> home_team;
+    array[N_games] int<lower=1, upper=N_teams> away_team;
+
+    // Threshold for home field advantage
+    // 99% of the density should be between 0 and this value
+    real home_field_advantage_threshold;
 }
+
+transformed data {
+    // Section 3.3.1 https://betanalpha.github.io/assets/case_studies/prior_modeling.html
+    real home_field_advantage_prior_sigma = home_field_advantage_threshold / 2.57;
+}
+
 parameters {
-  real mu_att;  // mean attack strength across all teams
-  real mu_def;  // mean defense strength across all teams
-  real<lower=0> sigma_att;
-  real<lower=0> sigma_def;
-  real home_advantage;  // home advantage parameter
-  
-  vector[teams_number] attack;
-  vector[teams_number] defense;
+    // Latent offensive and defensive strength of each team
+    // Hierarchical prior
+    vector[N_teams] theta_offense;
+    vector[N_teams] theta_defense;
+    real theta_offense_bar;
+    real theta_defense_bar;
+    real<lower=0> sigma_offense_bar;
+    real<lower=0> sigma_defense_bar;
+
+    // Noise in the points (same for home and away teams)
+    real<lower=0> sigma_points;
+
+    // Home field advantage is extremely unlikely to be negative
+    real <lower=0> home_field_advantage;
 }
-transformed parameters {
-  vector[games_number] log_mu_home;
-  vector[games_number] log_mu_away;
-  
-  for (g in 1:games_number) {
-    log_mu_home[g] = home_advantage + attack[home_team[g]] - defense[away_team[g]] + log(100); // Adding offset
-    log_mu_away[g] = attack[away_team[g]] - defense[home_team[g]] + log(100); // Adding offset
-  }
-}
+
 model {
-  // Priors
-  mu_att ~ normal(3, 1);  // Higher mean for attack
-  mu_def ~ normal(3, 1);  // Higher mean for defense
-  home_advantage ~ normal(0.5, 0.2);  // Adjusted home advantage
-  sigma_att ~ gamma(2, 0.5);  // Adjusted variance for attack
-  sigma_def ~ gamma(2, 0.5);  // Adjusted variance for defense
-  
-  attack ~ normal(mu_att, sigma_att);
-  defense ~ normal(mu_def, sigma_def);
-  
-  home_score ~ poisson_log(log_mu_home);
-  away_score ~ poisson_log(log_mu_away);
+
+    // Prior Modeling
+
+    // Average strength of the teams
+    theta_offense_bar ~ normal(116, 10);
+
+    // Home field advantage
+    // Put 99% of dennsity between 0 and input {home_field_advantage_threshold}
+    home_field_advantage ~ normal(0, home_field_advantage_prior_sigma);
+
+    // Variations of the teams strength
+    sigma_offense_bar ~ cauchy(0, 5);
+    sigma_defense_bar ~ cauchy(0, 5);
+
+    // Individual team strength
+    theta_offense ~ normal(theta_offense_bar, sigma_offense_bar);
+    theta_defense ~ normal(0, sigma_defense_bar);
+
+    // Gaussian noise in the points
+    sigma_points ~ cauchy(0, 5);
+
+    // Likelihood
+    for(game in 1:N_games) {
+        // Team points modeled as gaussian
+        real home_points_regression = home_field_advantage + theta_offense[home_team[game]] + theta_defense[away_team[game]];
+        real away_points_regression = theta_offense[away_team[game]] + theta_defense[home_team[game]];
+        home_points[game] ~ normal(home_points_regression, sigma_points);
+        away_points[game] ~ normal(away_points_regression, sigma_points);    
+    }
+}
+
+generated quantities {
+
+    // Remove the mean from the latent variables
+    vector[N_teams] theta_defense_centered;
+
+    for (i in 1:N_teams) {
+        theta_defense_centered[i] = theta_defense[i] - mean(theta_defense);
+    }
+
+    vector[N_teams] theta_offense_centered;
+
+    for (i in 1:N_teams) {
+        theta_offense_centered[i] = theta_offense[i] - mean(theta_offense);
+    }
 }

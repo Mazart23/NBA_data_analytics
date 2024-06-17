@@ -1,6 +1,6 @@
 data {
-  int teams_number;
-  int games_number;
+  int<lower=0> teams_number;
+  int<lower=0> games_number;
   array[games_number] int home_team;
   array[games_number] int away_team;
   array[games_number] int<lower=0> home_score;
@@ -19,45 +19,35 @@ parameters {
   vector[teams_number-1] away_att_raw;
   vector[teams_number-1] home_def_raw;
   vector[teams_number-1] away_def_raw;
+  real mu_att;  // mean attack strength across all teams
+  real mu_def;  // mean defense strength across all teams
+  real<lower=0> sigma_att;
+  real<lower=0> sigma_def;
+  real home_advantage;  // home advantage parameter
+  
+  vector[teams_number] attack;
+  vector[teams_number] defense;
 }
 transformed parameters {
   vector[games_number] log_mu_home;
   vector[games_number] log_mu_away;
-  vector[teams_number] home_att;
-  vector[teams_number] away_att;
-  vector[teams_number] home_def;
-  vector[teams_number] away_def;
-
-  // need to make sum(att)=sum(def)=0
-  for (k in 1:(teams_number-1)) {
-    home_att[k] = home_att_raw[k];
-    away_att[k] = away_att_raw[k];
-    home_def[k] = home_def_raw[k];
-    away_def[k] = away_att_raw[k];
+  
+  for (g in 1:games_number) {
+    log_mu_home[g] = home_advantage + attack[home_team[g]] - defense[away_team[g]] + log(100); // Adding offset
+    log_mu_away[g] = attack[away_team[g]] - defense[home_team[g]] + log(100); // Adding offset
   }
-  home_att[teams_number] = -sum(home_att_raw);
-  away_att[teams_number] = -sum(away_att_raw);
-  home_def[teams_number] = -sum(home_def_raw);
-  away_def[teams_number] = -sum(away_def_raw);
-
-  // getting mu in log form
-  log_mu_home = home_att[home_team] + away_def[away_team] + off_set;
-  log_mu_away = away_att[away_team] + home_def[home_team] + off_set;
 }
 model {
-  mu_home_att ~ normal(3.5, 0.5);  // Adjusted for higher scores
-  mu_away_att ~ normal(3.5, 0.5);  // Adjusted for higher scores
-  mu_home_def ~ normal(3.5, 0.5);  // Adjusted for higher scores
-  mu_away_def ~ normal(3.5, 0.5);  // Adjusted for higher scores
-  sigma2_att ~ gamma(2, 0.1);
-  sigma2_def ~ gamma(2, 0.1);
-  off_set ~ normal(0.1, 0.1);
-
-  home_att_raw ~ normal(mu_home_att, sigma2_att);
-  away_att_raw ~ normal(mu_away_att, sigma2_att);
-  home_def_raw ~ normal(mu_home_def, sigma2_def);
-  away_def_raw ~ normal(mu_away_def, sigma2_def);
-
+  // Priors
+  mu_att ~ normal(3, 1);  // Higher mean for attack
+  mu_def ~ normal(3, 1);  // Higher mean for defense
+  home_advantage ~ normal(0.5, 0.2);  // Adjusted home advantage
+  sigma_att ~ gamma(2, 0.5);  // Adjusted variance for attack
+  sigma_def ~ gamma(2, 0.5);  // Adjusted variance for defense
+  
+  attack ~ normal(mu_att, sigma_att);
+  defense ~ normal(mu_def, sigma_def);
+  
   home_score ~ poisson_log(log_mu_home);
   away_score ~ poisson_log(log_mu_away);
 }
