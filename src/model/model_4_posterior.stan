@@ -17,16 +17,25 @@ parameters {
   real c_offset;
   real home_advantage;
 
-  vector[teams_number] home_att;
-  vector[teams_number] away_att;
-  vector[teams_number] home_def;
-  vector[teams_number] away_def;
+  vector[teams_number] raw_home_att;
+  vector[teams_number] raw_away_att;
+  vector[teams_number] raw_home_def;
+  vector[teams_number] raw_away_def;
 
 }
 
 transformed parameters {
+  vector[teams_number] home_att;
+  vector[teams_number] away_att;
+  vector[teams_number] home_def;
+  vector[teams_number] away_def;
   vector[games_number] theta_home;
   vector[games_number] theta_away;
+
+  home_att = raw_home_att - mean(raw_home_att);
+  away_att = raw_away_att - mean(raw_away_att);
+  home_def = raw_home_def - mean(raw_home_def);
+  away_def = raw_away_def - mean(raw_away_def);
 
   // getting mu
   for (i in 1:games_number) {
@@ -46,10 +55,10 @@ model {
   sigma_att ~ gamma(0.1, 0.1);
   sigma_def ~ gamma(0.1, 0.1);
 
-  home_att ~ normal(mu_home_att, sigma_att);
-  away_att ~ normal(mu_away_att, sigma_att);
-  home_def ~ normal(mu_home_def, sigma_def);
-  away_def ~ normal(mu_away_def, sigma_def);
+  raw_home_att ~ normal(mu_home_att, sigma_att);
+  raw_away_att ~ normal(mu_away_att, sigma_att);
+  raw_home_def ~ normal(mu_home_def, sigma_def);
+  raw_away_def ~ normal(mu_away_def, sigma_def);
 
   home_score ~ poisson(theta_home);
   away_score ~ poisson(theta_away);
