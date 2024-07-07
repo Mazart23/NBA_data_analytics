@@ -14,6 +14,10 @@ parameters {
   real mu_away_def;
   real<lower=0> sigma_att;
   real<lower=0> sigma_def;
+
+  real<lower=0> phi_home;
+  real<lower=0> phi_away;
+
   real c_offset;
   real home_advantage;
 
@@ -44,7 +48,7 @@ transformed parameters {
 }
 
 model {
-  c_offset ~ normal(4, 0.1);
+  c_offset ~ normal(4.25, 0.25);
   home_advantage ~ normal(0.1, 0.01);
 
   mu_home_att ~ normal(0, 0.001);
@@ -54,13 +58,16 @@ model {
   sigma_att ~ gamma(0.2, 0.1);
   sigma_def ~ gamma(0.2, 0.1);
 
+  phi_home ~ gamma(5, 0.25);
+  phi_away ~ gamma(5, 0.25);
+
   raw_home_att ~ normal(mu_home_att, sigma_att);
   raw_away_att ~ normal(mu_away_att, sigma_att);
   raw_home_def ~ normal(mu_home_def, sigma_def);
   raw_away_def ~ normal(mu_away_def, sigma_def);
 
-  home_score ~ poisson(theta_home);
-  away_score ~ poisson(theta_away);
+  home_score ~ neg_binomial_2(theta_home, phi_home);
+  away_score ~ neg_binomial_2(theta_away, phi_away);
 }
 
 generated quantities {
@@ -68,7 +75,7 @@ generated quantities {
   array[games_number] int away_score_pred;
 
   for (i in 1:games_number) {
-    home_score_pred[i] = poisson_rng(theta_home[i]);
-    away_score_pred[i] = poisson_rng(theta_away[i]);
+    home_score_pred[i] = neg_binomial_2_rng(theta_home[i], phi_home);
+    away_score_pred[i] = neg_binomial_2_rng(theta_away[i], phi_away);
   }
 }

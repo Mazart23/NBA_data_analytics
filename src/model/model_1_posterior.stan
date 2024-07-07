@@ -27,22 +27,6 @@ parameters {
 transformed parameters {
   vector[games_number] mu_home;
   vector[games_number] mu_away;
-  // vector[teams_number] home_att;
-  // vector[teams_number] away_att;
-  // vector[teams_number] home_def;
-  // vector[teams_number] away_def;
-
-  // // need to make sum(att)=sum(def)=0
-  // for (k in 1:(teams_number-1)) {
-  //   home_att[k] = home_att_raw[k];
-  //   away_att[k] = away_att_raw[k];
-  //   home_def[k] = home_def_raw[k];
-  //   away_def[k] = away_att_raw[k];
-  // }
-  // home_att[teams_number] = -sum(home_att_raw);
-  // away_att[teams_number] = -sum(away_att_raw);
-  // home_def[teams_number] = -sum(home_def_raw);
-  // away_def[teams_number] = -sum(away_def_raw);
 
   // getting mu
   for (i in 1:games_number) {
@@ -64,7 +48,7 @@ model {
   // phi_away ~ uniform(0, 1);
   phi_home ~ gamma(2.5, 0.05);
   phi_away ~ gamma(2.5, 0.05);
-  c_offset ~ normal(4, 1);
+  c_offset ~ normal(0, 1);
 
   home_att ~ normal(mu_home_att, sigma2_att);
   away_att ~ normal(mu_away_att, sigma2_att);
