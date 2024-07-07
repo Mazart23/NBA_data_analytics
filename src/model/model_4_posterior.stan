@@ -37,7 +37,6 @@ transformed parameters {
   home_def = raw_home_def - mean(raw_home_def);
   away_def = raw_away_def - mean(raw_away_def);
 
-  // getting mu
   for (i in 1:games_number) {
     theta_home[i] = exp(home_att[home_team[i]] + away_def[away_team[i]] + c_offset + home_advantage);
     theta_away[i] = exp(away_att[away_team[i]] + home_def[home_team[i]] + c_offset);
@@ -45,13 +44,13 @@ transformed parameters {
 }
 
 model {
-  c_offset ~ normal(0, 0.0001);
-  home_advantage ~ normal(0, 0.0001);
+  c_offset ~ normal(4, 0.1);
+  home_advantage ~ normal(0.5, 0.1);
 
-  mu_home_att ~ normal(0, 0.0001);
-  mu_away_att ~ normal(0, 0.0001);
-  mu_home_def ~ normal(0, 0.0001);
-  mu_away_def ~ normal(0, 0.0001);
+  mu_home_att ~ normal(0.1, 0.01);
+  mu_away_att ~ normal(0.1, 0.01);
+  mu_home_def ~ normal(0, 0.01);
+  mu_away_def ~ normal(0, 0.01);
   sigma_att ~ gamma(0.1, 0.1);
   sigma_def ~ gamma(0.1, 0.1);
 

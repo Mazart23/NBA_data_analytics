@@ -25,8 +25,8 @@ parameters {
 }
 
 transformed parameters {
-  array[teams_number] real mu_home;
-  array[teams_number] real mu_away;
+  array[games_number] real mu_home;
+  array[games_number] real mu_away;
   // vector[teams_number] home_att;
   // vector[teams_number] away_att;
   // vector[teams_number] home_def;
@@ -45,7 +45,7 @@ transformed parameters {
   // away_def[teams_number] = -sum(away_def_raw);
 
   // getting mu
-  for (k in 1:(teams_number)) {
+  for (k in 1:(games_number)) {
     mu_home[k] = home_att[k] + away_def[k] + c_offset;
     mu_away[k] = away_att[k] + home_def[k] + c_offset;
   }

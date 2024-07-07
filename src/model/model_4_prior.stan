@@ -6,10 +6,11 @@ generated quantities {
   real mu_away_att;
   real mu_home_def;
   real mu_away_def;
-  real sigma2_att;
-  real sigma2_def;
-  real phi_home;
-  real phi_away;
+  real sigma_att;
+  real sigma_def;
+  real theta_home;
+  real theta_away;
+  real home_advantage;
   real c_offset;
 
   real mu_home;
@@ -19,27 +20,25 @@ generated quantities {
   real home_def;
   real away_def;
   
-  mu_home_att = normal_rng(0.2, 1);
-  mu_away_att = normal_rng(0, 1);
-  mu_home_def = normal_rng(-0.2, 1);
-  mu_away_def = normal_rng(0, 1);
-  sigma2_att = gamma_rng(10, 1);
-  sigma2_def = gamma_rng(10, 1);
-  // phi_home = normal_rng(10, 10);
-  // phi_away = normal_rng(10, 10);
-  phi_home = gamma_rng(2.5, 0.05);
-  phi_away = gamma_rng(2.5, 0.05);
-  c_offset = normal_rng(115, 1);
+  mu_home_att = normal_rng(0, 0.001);
+  mu_away_att = normal_rng(0, 0.001);
+  mu_home_def = normal_rng(0, 0.001);
+  mu_away_def = normal_rng(0, 0.001);
 
-  home_att = normal_rng(mu_home_att, sigma2_att);
-  away_att = normal_rng(mu_away_att, sigma2_att);
-  home_def = normal_rng(mu_home_def, sigma2_def);
-  away_def = normal_rng(mu_away_def, sigma2_def);
+  sigma_att = gamma_rng(0.1, 0.1);
+  sigma_def = gamma_rng(0.1, 0.1);
 
-  mu_home = home_att + away_def + c_offset;
-  mu_away = away_att + home_def + c_offset;
+  c_offset = normal_rng(4, 0.01);
+  home_advantage = normal_rng(0.1, 0.01);
 
-  home_score_pred = neg_binomial_2_rng(mu_home, phi_home);
-  away_score_pred = neg_binomial_2_rng(mu_away, phi_away);
+  home_att = normal_rng(mu_home_att, sigma_att);
+  away_att = normal_rng(mu_away_att, sigma_att);
+  home_def = normal_rng(mu_home_def, sigma_def);
+  away_def = normal_rng(mu_away_def, sigma_def);
+
+  theta_home = exp(home_att + away_def + c_offset + home_advantage);
+  theta_away = exp(away_att + home_def + c_offset);
   
+  home_score_pred = poisson_rng(theta_home);
+  away_score_pred = poisson_rng(theta_away);
 }
