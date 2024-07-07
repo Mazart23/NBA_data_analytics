@@ -25,8 +25,8 @@ parameters {
 }
 
 transformed parameters {
-  array[games_number] real mu_home;
-  array[games_number] real mu_away;
+  vector[games_number] mu_home;
+  vector[games_number] mu_away;
   // vector[teams_number] home_att;
   // vector[teams_number] away_att;
   // vector[teams_number] home_def;
@@ -45,9 +45,9 @@ transformed parameters {
   // away_def[teams_number] = -sum(away_def_raw);
 
   // getting mu
-  for (k in 1:(games_number)) {
-    mu_home[k] = home_att[k] + away_def[k] + c_offset;
-    mu_away[k] = away_att[k] + home_def[k] + c_offset;
+  for (i in 1:games_number) {
+    mu_home[i] = exp(home_att[home_team[i]] + away_def[away_team[i]] + c_offset);
+    mu_away[i] = exp(away_att[away_team[i]] + home_def[home_team[i]] + c_offset);
   }
   // mu_home = home_att[home_team] + away_def[away_team] + c_offset;
   // mu_away = away_att[away_team] + home_def[home_team] + c_offset;
@@ -64,7 +64,7 @@ model {
   // phi_away ~ uniform(0, 1);
   phi_home ~ gamma(2.5, 0.05);
   phi_away ~ gamma(2.5, 0.05);
-  c_offset ~ normal(115, 1);
+  c_offset ~ normal(4, 1);
 
   home_att ~ normal(mu_home_att, sigma2_att);
   away_att ~ normal(mu_away_att, sigma2_att);
@@ -73,10 +73,10 @@ model {
 
   // mu_home = home_att[home_team] + away_def[away_team] + c_offset;
   // mu_away = away_att[away_team] + home_def[home_team] + c_offset;
-  for (k in 1:(games_number)) {
-    home_score[k] ~ neg_binomial_2(mu_home[home_team[k]], phi_home);
-    away_score[k] ~ neg_binomial_2(mu_away[away_team[k]], phi_away);
-  }
+  
+  home_score ~ neg_binomial_2(mu_home, phi_home);
+  away_score ~ neg_binomial_2(mu_away, phi_away);
+  
   // home_score ~ neg_binomial_2(mu_home, phi_home);
   // away_score ~ neg_binomial_2(mu_away, phi_away);
 }
